@@ -1,4 +1,4 @@
-# CryptoTracker
+# CryptoTracker...
 
 A clean, modern iOS app that tracks cryptocurrency market data, built with **SwiftUI** and a testable architecture based on **MVVM**, the **Repository pattern**, and **Dependency Injection**.
 
