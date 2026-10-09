@@ -5,8 +5,24 @@ struct CoinListView: View {
 
     var body: some View {
         NavigationStack {
-            List(viewModel.filteredCoins) { coin in
-                CoinRowView(coin: coin)
+            List {
+                ForEach(viewModel.filteredCoins) { coin in
+                    CoinRowView(coin: coin)
+                        .task {
+                            // Ask the ViewModel to load more if this is the last row
+                            await viewModel.loadMoreIfNeeded(currentCoin: coin)
+                        }
+                }
+
+                // Small spinner at the bottom while loading the next page
+                if viewModel.isLoading && !viewModel.coins.isEmpty {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .listRowSeparator(.hidden)
+                }
             }
             .navigationTitle("Crypto")
             .searchable(text: $viewModel.searchText, prompt: "Search coins")
