@@ -1,17 +1,13 @@
-//
-//  CryptoTrackerApp.swift
-//  CryptoTracker
-//
-//  Created by Ramim Hossain on 09/10/2026.
-//
-
 import SwiftUI
 
 @main
 struct CryptoTrackerApp: App {
+    // Composition root: the only place where we create the real objects
+    private let repository = DefaultCoinRepository()
+
     var body: some Scene {
         WindowGroup {
-            CoinListView()
+            CoinListView(viewModel: CoinListViewModel(repository: repository))
         }
     }
 }

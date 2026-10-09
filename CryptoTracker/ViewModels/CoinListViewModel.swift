@@ -5,9 +5,12 @@ import Observation
 @MainActor
 final class CoinListViewModel {
 
+    // State that the View will display
     var coins: [Coin] = []
     var isLoading = false
     var errorMessage: String?
+
+    // The text typed in the search bar
     var searchText = ""
 
     // Pagination state
@@ -15,6 +18,14 @@ final class CoinListViewModel {
     private var canLoadMore = true
     private let pageSize = 20
 
+    // Dependency injected from outside
+    private let repository: CoinRepository
+
+    init(repository: CoinRepository) {
+        self.repository = repository
+    }
+
+    // Coins to show: all coins, or only the ones matching the search text
     var filteredCoins: [Coin] {
         guard !searchText.isEmpty else { return coins }
         return coins.filter {
@@ -22,8 +33,6 @@ final class CoinListViewModel {
             $0.symbol.localizedCaseInsensitiveContains(searchText)
         }
     }
-
-    private let service = CoinAPIService()
 
     // Load the first page
     func loadCoins() async {
@@ -34,9 +43,10 @@ final class CoinListViewModel {
         currentPage = 1
 
         do {
-            let result = try await service.fetchCoins(page: 1, perPage: pageSize)
+            let result = try await repository.fetchCoins(page: 1, perPage: pageSize)
             coins = result
-            // TODO 1: set canLoadMore to true only if result.count == pageSize
+            // Only allow more pages if this page was full
+            canLoadMore = result.count == pageSize
         } catch {
             print("Load error: \(error)")
             errorMessage = "Failed to load coins. Please try again."
@@ -51,20 +61,23 @@ final class CoinListViewModel {
         guard searchText.isEmpty else { return }
         guard !isLoading, canLoadMore else { return }
 
-        // TODO 2: only continue if `coin` is the last item in `coins`
-        //         (compare coin.id with coins.last?.id, otherwise return)
+        // Continue only if this coin is within the last 5 items of the list
+        let thresholdIndex = coins.index(coins.endIndex, offsetBy: -5, limitedBy: coins.startIndex) ?? coins.startIndex
+        guard let coinIndex = coins.firstIndex(where: { $0.id == coin.id }),
+              coinIndex >= thresholdIndex else { return }
 
         isLoading = true
         let nextPage = currentPage + 1
 
         do {
-            let result = try await service.fetchCoins(page: nextPage, perPage: pageSize)
-            // TODO 3: append result to coins (use coins.append(contentsOf: result))
+            let result = try await repository.fetchCoins(page: nextPage, perPage: pageSize)
+            // Add new coins to the end of the existing list
+            coins.append(contentsOf: result)
             currentPage = nextPage
             canLoadMore = result.count == pageSize
         } catch {
             print("Load more error: \(error)")
-            // Keep the existing list, just stop here so the user can retry by scrolling
+            // Keep the existing list so the user can retry by scrolling again
         }
 
         isLoading = false

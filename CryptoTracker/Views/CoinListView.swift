@@ -1,7 +1,12 @@
 import SwiftUI
 
 struct CoinListView: View {
-    @State private var viewModel = CoinListViewModel()
+    @State private var viewModel: CoinListViewModel
+
+    // The ViewModel is injected from outside
+    init(viewModel: CoinListViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         NavigationStack {
@@ -9,7 +14,7 @@ struct CoinListView: View {
                 ForEach(viewModel.filteredCoins) { coin in
                     CoinRowView(coin: coin)
                         .task {
-                            // Ask the ViewModel to load more if this is the last row
+                            // Ask the ViewModel to load more if this row is near the end
                             await viewModel.loadMoreIfNeeded(currentCoin: coin)
                         }
                 }
@@ -52,5 +57,5 @@ struct CoinListView: View {
 }
 
 #Preview {
-    CoinListView()
+    CoinListView(viewModel: CoinListViewModel(repository: DefaultCoinRepository()))
 }
